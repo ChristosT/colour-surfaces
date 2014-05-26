@@ -1,6 +1,6 @@
 colour-surfaces
 ===============
 
-Simple Python Scripts to colour surfaces by gaussian or mean curvature.
+Simple Python Scripts to colour surfaces by gaussian  curvature.
 
 Using nympy and Mayavi
