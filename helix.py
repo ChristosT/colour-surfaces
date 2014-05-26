@@ -10,4 +10,5 @@ K=-a**2/(u**2 +a**2)**2
 
 from mayavi import mlab
 s = mlab.mesh(x, y, z,scalars=K)
+mlab.colorbar(orientation='horizontal',title='Gaussian Curvature')
 mlab.show()
