@@ -19,8 +19,29 @@ from mayavi.core.ui.api import MayaviScene, MlabSceneModel, \
 import numpy as np
 from sympy import *
 
-from sympy_calculator import PLOT
-from predefined_surfaces import *
+#from sympy_calculator import PLOT
+#from predefined_surfaces import *
+
+u=Symbol('u', real=True)
+v=Symbol('v', real=True)
+
+def Helix():
+    S=[u*cos(v),u*sin(v),2*v]
+    umax=5
+    umin=-5
+    vmax=2*pi
+    vmin=0
+    PLOT(S,umax,umin,vmax,vmin)
+    
+def Hyperboloid_one_sheet():
+    S=[2*cosh(u/2)*cos(v), 2*cosh(u/2)*sin(v), u]
+    umax=3
+    umin=-3
+    vmax=2*pi
+    vmin=0
+    PLOT(S,umax,umin,vmax,vmin)
+
+
 
 def PLOT(S,umax,umin,vmax,vmin):
     global X,Y,Z,Gauss_Curvature
@@ -44,7 +65,7 @@ def PLOT(S,umax,umin,vmax,vmin):
 
     #Pass to numpy
    
-    [U,V] = mgrid[umin:umax:0.01,vmin:vmax+0.1:0.1]
+    [U,V] = np.mgrid[umin:umax:0.01,vmin:vmax+0.1:0.1]
     # convert Sympy formula to numpy lambda functions
     F1=lambdify((u,v), S[0], "numpy")
     F2=lambdify((u,v), S[1], "numpy")
@@ -58,44 +79,17 @@ def PLOT(S,umax,umin,vmax,vmin):
     return X,Y,Z,Gauss_Curvature
 
 
-a=Symbol('a', real=True)
-u=Symbol('u', real=True)
-v=Symbol('v', real=True)
 
-[u,v] = np.mgrid[0:2*np.pi +0.01:0.01,0:2*np.pi+0.1:0.1]
+[U,V] = np.mgrid[0:2*np.pi +0.01:0.01,0:2*np.pi+0.1:0.1]
 a=1
 c=2
-X =(c+a*np.cos(v))*np.cos(u)
-Y =(c+a*np.cos(v))*np.sin(u)
-Z =a*np.sin(v)
-Gauss_Curvature=np.cos(v)/(a*(c+a*np.cos(v)))
+X =(c+a*np.cos(U))*np.cos(U)
+Y =(c+a*np.cos(V))*np.sin(V)
+Z =a*np.sin(V)
+Gauss_Curvature=np.cos(V)/(a*(c+a*np.cos(V)))
 
-def Helix2():
-    S=[u*cos(v),u*sin(v),a*v]
-    umax=5
-    umin=-5
-    vmax=2*pi
-    vmin=0
-    return PLOT(S,umax,umin,vmax,vmin)
+
     
-def Hyperboloid_one_sheet():
-    S=[2*cosh(u/2)*cos(v), 2*cosh(u/2)*sin(v), u]
-    umax=3
-    umin=-3
-    vmax=2*pi
-    vmin=0
-    return PLOT(S,umax,umin,vmax,vmin)
-
-def Helix():
-#dphi, dtheta = pi/250.0, pi/250.0
-    global X,Y,Z,Gauss_Curvature
-    [u,v] = np.mgrid[-5:5:0.01,0:2*np.pi+0.1:0.1]
-    a=2
-
-    X = u*np.cos(v)
-    Y = u*np.sin(v)
-    Z = a*v
-    Gauss_Curvature=-a**2/(u**2 +a**2)**2
     
 ################################################################################
 
@@ -112,6 +106,7 @@ class Visualization(HasTraits):
 
         # We can do normal mlab calls on the embedded scene.
         #Helix()
+        self.scene.mlab.clf()  #clear scene
         self.scene.mlab.mesh(X, Y, Z,scalars=Gauss_Curvature)
         self.scene.mlab.colorbar(orientation='horizontal',title='Gaussian Curvature')
 
@@ -139,24 +134,26 @@ class MayaviQWidget(QtGui.QWidget):
         self.ui.setParent(self)
     
 
+################################################################################
+# The main Widget containing all the others
 
-class MainWindow(QtGui.QWidget):
+class MainWidget(QtGui.QWidget):
     def __init__(self):
         QtGui.QWidget.__init__(self)
-        self.setWindowTitle("Embedding Mayavi in a PyQt4 Application")
+        #self.setWindowTitle("Embedding Mayavi in a PyQt4 Application")
         
         # define a "complex" layout to test the behaviour
-        self.MyLayout = QtGui.QGridLayout()
+        self.MyLayout = QtGui.QHBoxLayout()
 
         # put some stuff around mayavi
         #label_list = []
-        for i in range(3):
-            for j in range(3):
-                if (i==1) and (j==1):continue
-                self.label = QtGui.QLabel(self)
-                self.label.setText("Your QWidget at (%d, %d)" % (i,j))
-                self.label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-                self.MyLayout.addWidget(self.label, i, j)
+        #for i in range(1,3):
+            #for j in range(3):
+                #if ((i==1) and (j==1)) or:continue
+                #self.label = QtGui.QLabel()
+                #self.label.setText("Your QWidget at (%d, %d)" % (i,j))
+                #self.label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
+                #self.MyLayout.addWidget(self.label, i, j)
 
         
         self.combo = QtGui.QComboBox()
@@ -167,14 +164,84 @@ class MainWindow(QtGui.QWidget):
         self.combo.addItem("Hyperboloid of one sheet")
         self.combo.addItem("Hyperboloids of two sheets")
         self.combo.addItem("Hyperboloids of two sheets")
-        self.combo.activated.connect(self.onActivated)
-        self.MyLayout.addWidget(self.combo, 1,2)
+        self.combo.activated.connect(self.onComboActivated)
         
         
+        self.checkbox = QtGui.QCheckBox("Custom Surface")
+        self.checkbox.stateChanged.connect(self.onCheckbox)
+         #to set the initial state
         
+        self.InputLayout=QtGui.QFormLayout()
+        self.XLabel=QtGui.QLabel()
+        self.XLabel.setText("X(u,v)")
+        self.XFormula= QtGui.QLineEdit()
+        
+        self.YLabel=QtGui.QLabel()
+        self.YLabel.setText("Y(u,v)")
+        self.YFormula= QtGui.QLineEdit()
+        
+        self.ZLabel=QtGui.QLabel()
+        self.ZLabel.setText("Z(u,v)")
+        self.ZFormula= QtGui.QLineEdit()
+        
+        
+        self.ApplyButton=QtGui.QPushButton()
+        self.ApplyButton.setText("Apply")
+        self.ApplyButton.setDisabled(True)
+        self.ApplyButton.clicked.connect(self.onApply)
+        
+        self.XFormula.setDisabled(True)
+        self.YFormula.setDisabled(True)
+        self.ZFormula.setDisabled(True)
+        
+        self.InputLayout.addRow(self.combo)
+        self.InputLayout.addRow(self.checkbox)
+        self.InputLayout.addRow(self.XLabel, self.XFormula)
+        self.InputLayout.addRow(self.YLabel, self.YFormula)
+        self.InputLayout.addRow(self.ZLabel, self.ZFormula)
+        self.InputLayout.addRow(self.ApplyButton)
+        
+        # u-v ranges
+        self.InputRangeLayout=QtGui.QGridLayout()
+        #-5:5:0.01,0:2*np.pi
+        
+        
+        self.uLabel=QtGui.QLabel()
+        self.uLabel.setText("u: from ")
+        self.InputRangeLayout.addWidget(self.uLabel,0,0)
+        self.umin= QtGui.QLineEdit()
+        self.InputRangeLayout.addWidget(self.umin,0,1)
+        self.u_toLabel=QtGui.QLabel()
+        self.u_toLabel.setText("to")
+        self.InputRangeLayout.addWidget(self.u_toLabel,0,2)
+        self.umax= QtGui.QLineEdit()
+        self.InputRangeLayout.addWidget(self.umax,0,3)
+        
+        self.vLabel=QtGui.QLabel()
+        self.vLabel.setText("v: from ")
+        self.InputRangeLayout.addWidget(self.vLabel,1,0)
+        self.vmin= QtGui.QLineEdit()
+        self.InputRangeLayout.addWidget(self.vmin,1,1)
+        self.v_toLabel=QtGui.QLabel()
+        self.v_toLabel.setText("to")
+        self.InputRangeLayout.addWidget(self.v_toLabel,1,2)
+        self.vmax= QtGui.QLineEdit()
+        self.InputRangeLayout.addWidget(self.vmax,1,3)
+        
+        self.umax.setDisabled(True)
+        self.umin.setDisabled(True)
+        self.vmax.setDisabled(True)
+        self.vmin.setDisabled(True)
+
+        self.InputLayout.addRow(self.InputRangeLayout)
+        
+
+        
+        self.MyLayout.addLayout(self.InputLayout)
+    
         self.mayavi_widget = MayaviQWidget()
 
-        self.MyLayout.addWidget(self.mayavi_widget, 1, 1)
+        self.MyLayout.addWidget(self.mayavi_widget,6)
         
         
         
@@ -184,16 +251,64 @@ class MainWindow(QtGui.QWidget):
         #window.setCentralWidget(container)
         #window.show()
     
-    def onActivated(self):
+    def onComboActivated(self):
         global X,Y,Z,Gauss_Curvature
         text= self.combo.currentText()
         print text
         if text=="Helix":
             Helix()
+            self.mayavi_widget.visualization.update_plot()
         
-        #if text=="Hyperboloid of one sheet":
-            #X,Y,Z,Gauss_Curvature=Hyperboloid_one_sheet()
+        elif text=="Hyperboloid of one sheet":
+            Hyperboloid_one_sheet()
+            self.mayavi_widget.visualization.update_plot()
+            
+    def onCheckbox(self):
+        if self.checkbox.isChecked():
+            self.combo.setDisabled(True)  
+            self.XFormula.setEnabled(True)
+            self.YFormula.setEnabled(True)
+            self.ZFormula.setEnabled(True)
+            self.ApplyButton.setEnabled(True)
+            self.umax.setEnabled(True)
+            self.umin.setEnabled(True)
+            self.vmax.setEnabled(True)
+            self.vmin.setEnabled(True)
+        else:
+            self.combo.setEnabled(True)  
+            self.XFormula.setDisabled(True)
+            self.YFormula.setDisabled(True)
+            self.ZFormula.setDisabled(True)
+            self.ApplyButton.setDisabled(True)
+            self.umax.setDisabled(True)
+            self.umin.setDisabled(True)
+            self.vmax.setDisabled(True)
+            self.vmin.setDisabled(True)
+                
+    def onApply(self):
+        #try: 
+        S=[sympify(self.XFormula.text()),sympify(self.YFormula.text()) ,sympify(self.ZFormula.text()) ]
+        umax=sympify(self.umax.text())
+        umin=sympify(self.umin.text())
+        vmax=sympify(self.vmax.text())
+        vmin=sympify(self.vmin.text())
+        PLOT(S,umax,umin,vmax,vmin)
+        self.mayavi_widget.visualization.update_plot()
+        
     
+class MainWindow(QtGui.QMainWindow):
+    """ Our Main Window class
+    """
+    def __init__(self):
+        """ Constructor Function
+        """
+        QtGui.QMainWindow.__init__(self)
+        self.setWindowTitle("A Simple Text Editor")
+        #self.setWindowIcon(QIcon('appicon.png'))
+        
+        self.setGeometry(100, 100, 800, 600)
+        self.MainWidget = MainWidget()
+        self.setCentralWidget(self.MainWidget)
 
 
 if __name__ =='__main__':
