@@ -1,9 +1,9 @@
-from sympy import lambdify,diff,Matrix
+from sympy import lambdify,diff,Matrix,simplify
+from sympy.abc import u,v
+from numpy import mgrid
 
 def PLOT(S,umax,umin,vmax,vmin):
-    #global X,Y,Z,Gauss_Curvature
-
-    #from sympy.abc import a, u,v
+ 
 
     xu=Matrix([diff(f,u) for f in S])
     xv=Matrix([diff(f,v) for f in S])
@@ -33,4 +33,3 @@ def PLOT(S,umax,umin,vmax,vmin):
     Y=F2(U,V);
     Z=F3(U,V);
     Gauss_Curvature=F4(U,V);
-    return X,Y,Z,Gauss_Curvature
