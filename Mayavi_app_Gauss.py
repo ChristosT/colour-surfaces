@@ -1,14 +1,5 @@
-
-# to be used, you need to set the QT_API environment variable to 'pyqt'
-#os.environ['QT_API'] = 'pyqt'
-
-# To be able to use PySide or PyQt4 and not run in conflicts with traits,
-# we need to import QtGui and QtCore from pyface.qt
 from PySide import QtGui, QtCore
-# Alternatively, you can bypass this line, but you need to make sure that
-# the following lines are executed before the import of PyQT:
-#   import sip
-#   sip.setapi('QString', 2)
+
 import sys
 from traits.api import HasTraits, Instance, on_trait_change
 from traitsui.api import View, Item
@@ -24,66 +15,73 @@ from sympy import *
 
 u=Symbol('u', real=True)
 v=Symbol('v', real=True)
+D={'v':v,'u':u} # we use it in order to keep u,v as variable during the 
+#use of simpify
 
-def Helix():
-    S=[u*cos(v),u*sin(v),2*v]
-    umax=5
-    umin=-5
-    vmax=2*pi
-    vmin=0
-    PLOT(S,umax,umin,vmax,vmin)
+
     
-def Hyperboloid_one_sheet():
-    S=[2*cosh(u/2)*cos(v), 2*cosh(u/2)*sin(v), u]
-    umax=3
-    umin=-3
-    vmax=2*pi
-    vmin=0
-    PLOT(S,umax,umin,vmax,vmin)
-
-
-
-def PLOT(S,umax,umin,vmax,vmin):
-    global X,Y,Z,Gauss_Curvature
-
-    #from sympy.abc import a, u,v
-
-    xu=Matrix([diff(f,u) for f in S])
-    xv=Matrix([diff(f,v) for f in S])
-    xuu=Matrix([diff(f,u) for f in xu])
-    xvv=Matrix([diff(f,v) for f in xv])
-    xuv=Matrix([diff(f,v) for f in xu])
-    E=simplify(xu.dot(xu))
-    G=simplify(xv.dot(xv))
-    F=simplify(xu.dot(xv))
-
-
-    H1=Matrix([xuu,xu,xv]).reshape(3,3)
-    H2=Matrix([xvv,xu,xv]).reshape(3,3)
-    H3=Matrix([xuv,xu,xv]).reshape(3,3)
-    K=simplify(((H1.det()*H2.det() -(H3.det()**2)))/ (xu.norm()**2*xv.norm()**2 -F*F)**2)
-
-    #Pass to numpy
+class Surface():
+    
+    def __init__(self,S,umin,umax,vmin,vmax):
+        self.S=S
+        self.umax=umax
+        self.umin=umin
+        self.vmax=vmax
+        self.vmin=vmin
+        self.u_v_range=[umin,umax,vmin,vmax]
    
-    [U,V] = np.mgrid[umin:umax:0.01,vmin:vmax+0.1:0.1]
-    # convert Sympy formula to numpy lambda functions
-    F1=lambdify((u,v), S[0], "numpy")
-    F2=lambdify((u,v), S[1], "numpy")
-    F3=lambdify((u,v), S[2], "numpy")
-    F4=lambdify((u,v), K, "numpy")
-    #Calculate numpy arrays 
-    X=F1(U,V);
-    Y=F2(U,V);
-    Z=F3(U,V);
-    Gauss_Curvature=F4(U,V);
-    return X,Y,Z,Gauss_Curvature
+    def cal(self):
+        global X,Y,Z,Gauss_Curvature
+
+        xu=Matrix([diff(f,u) for f in self.S])
+        xv=Matrix([diff(f,v) for f in self.S])
+        xuu=Matrix([diff(f,u) for f in xu])
+        xvv=Matrix([diff(f,v) for f in xv])
+        xuv=Matrix([diff(f,v) for f in xu])
+        E=simplify(xu.dot(xu))
+        G=simplify(xv.dot(xv))
+        F=simplify(xu.dot(xv))
+
+
+        H1=Matrix([xuu,xu,xv]).reshape(3,3)
+        H2=Matrix([xvv,xu,xv]).reshape(3,3)
+        H3=Matrix([xuv,xu,xv]).reshape(3,3)
+        K=simplify(((H1.det()*H2.det() -(H3.det()**2)))/ (xu.norm()**2*xv.norm()**2 -F*F)**2)
+
+        #Pass to numpy
+        du=float(self.umax-self.umin)/100
+        dv=float(self.vmax-self.vmin)/100
+        [U,V] = np.mgrid[self.umin:self.umax+du:du,self.vmin:self.vmax+dv:dv]
+        # convert Sympy formula to numpy lambda functions
+        F1=lambdify((u,v), self.S[0], "numpy")
+        F2=lambdify((u,v), self.S[1], "numpy")
+        F3=lambdify((u,v), self.S[2], "numpy")
+        F4=lambdify((u,v), K, "numpy")
+        #Calculate numpy arrays 
+        #self.X=F1(U,V)
+        #self.Y=F2(U,V)
+        #self.Z=F3(U,V)
+        #self.Gauss_Curvature=F4(U,V)
+        X=F1(U,V)
+        Y=F2(U,V)
+        Z=F3(U,V)
+        Gauss_Curvature=F4(U,V)
+
+
+        
+
+Torus = Surface([(2 + cos(v))*cos(u),(2 + cos(v))*sin(u),sin(v)],0,2*pi,0,2*pi)
+Helix = Surface([u*cos(v),u*sin(v),2*v],-5,5,0,2*pi)
+Hyperboloid_one_sheet=Surface([2*cosh(u/2)*cos(v), 2*cosh(u/2)*sin(v), u],-3,3,0,2*pi)
+Ellipsoid=Surface([3*cos(u)*cos(v),4*cos(u)*sin(v),5*sin(u)],0,2*pi,0,pi)
+Elliptic_Paraboloid=Surface([2*u*cos(v), 3*u*sin(v),u*u],0,2,0,2*pi)
 
 
 
 [U,V] = np.mgrid[0:2*np.pi +0.01:0.01,0:2*np.pi+0.1:0.1]
 a=1
 c=2
-X =(c+a*np.cos(U))*np.cos(U)
+X =(c+a*np.cos(U))*np.cos(V)
 Y =(c+a*np.cos(V))*np.sin(V)
 Z =a*np.sin(V)
 Gauss_Curvature=np.cos(V)/(a*(c+a*np.cos(V)))
@@ -105,11 +103,14 @@ class Visualization(HasTraits):
         # VTK features require a GLContext.
 
         # We can do normal mlab calls on the embedded scene.
-        #Helix()
+
+        assert X.shape==Y.shape and Y.shape==Z.shape and Z.shape==Gauss_Curvature.shape
         self.scene.mlab.clf()  #clear scene
         self.scene.mlab.mesh(X, Y, Z,scalars=Gauss_Curvature)
+        #self.scene.isometric_view()
         self.scene.mlab.colorbar(orientation='horizontal',title='Gaussian Curvature')
-
+        #isometric_view(self.scene.mlab)
+        self.scene.mlab.view(azimuth=45, elevation=60, distance=30)
     # the layout of the dialog screated
     view = View(Item('scene', editor=SceneEditor(scene_class=MayaviScene),
                      height=250, width=300, show_label=False),
@@ -145,17 +146,7 @@ class MainWidget(QtGui.QWidget):
         # define a "complex" layout to test the behaviour
         self.MyLayout = QtGui.QHBoxLayout()
 
-        # put some stuff around mayavi
-        #label_list = []
-        #for i in range(1,3):
-            #for j in range(3):
-                #if ((i==1) and (j==1)) or:continue
-                #self.label = QtGui.QLabel()
-                #self.label.setText("Your QWidget at (%d, %d)" % (i,j))
-                #self.label.setAlignment(QtCore.Qt.AlignHCenter|QtCore.Qt.AlignVCenter)
-                #self.MyLayout.addWidget(self.label, i, j)
-
-        
+       
         self.combo = QtGui.QComboBox()
         self.combo.addItem("Helix")
         self.combo.addItem("Ellipsoid")
@@ -184,6 +175,7 @@ class MainWidget(QtGui.QWidget):
         self.ZLabel.setText("Z(u,v)")
         self.ZFormula= QtGui.QLineEdit()
         
+        self.Formulas=[self.XFormula,self.YFormula,self.ZFormula]
         
         self.ApplyButton=QtGui.QPushButton()
         self.ApplyButton.setText("Apply")
@@ -233,6 +225,7 @@ class MainWidget(QtGui.QWidget):
         self.vmax.setDisabled(True)
         self.vmin.setDisabled(True)
 
+        self.u_v_range=[self.umin,self.umax,self.vmin,self.vmax]
         self.InputLayout.addRow(self.InputRangeLayout)
         
 
@@ -250,18 +243,38 @@ class MainWidget(QtGui.QWidget):
         #window = QtGui.QMainWindow()
         #window.setCentralWidget(container)
         #window.show()
+    def writeFormulas(self,Surface1):
+        for i in range(0,3):
+            self.Formulas[i].setText(str(Surface1.S[i]))
+        for i in range(0,4):
+            self.u_v_range[i].setText(str(Surface1.u_v_range[i]))
     
     def onComboActivated(self):
         global X,Y,Z,Gauss_Curvature
         text= self.combo.currentText()
         print text
         if text=="Helix":
-            Helix()
-            self.mayavi_widget.visualization.update_plot()
-        
+            Helix.cal()
+            self.writeFormulas(Helix)
+            
         elif text=="Hyperboloid of one sheet":
-            Hyperboloid_one_sheet()
-            self.mayavi_widget.visualization.update_plot()
+            Hyperboloid_one_sheet.cal()
+            self.writeFormulas(Hyperboloid_one_sheet)
+
+        elif text=="Torus":
+            Torus.cal()
+            self.writeFormulas(Torus)
+   
+        elif text=="Ellipsoid":
+            Ellipsoid.cal()
+            self.writeFormulas(Ellipsoid)
+
+        elif text=="Elliptic Paraboloid":
+            Elliptic_Paraboloid.cal()
+            self.writeFormulas(Elliptic_Paraboloid)
+        
+        self.mayavi_widget.visualization.update_plot()
+            
             
     def onCheckbox(self):
         if self.checkbox.isChecked():
@@ -287,12 +300,16 @@ class MainWidget(QtGui.QWidget):
                 
     def onApply(self):
         #try: 
-        S=[sympify(self.XFormula.text()),sympify(self.YFormula.text()) ,sympify(self.ZFormula.text()) ]
-        umax=sympify(self.umax.text())
-        umin=sympify(self.umin.text())
-        vmax=sympify(self.vmax.text())
-        vmin=sympify(self.vmin.text())
-        PLOT(S,umax,umin,vmax,vmin)
+        
+        Surface1=Surface([sympify(self.XFormula.text(),D),
+                        sympify(self.YFormula.text(),D),
+                        sympify(self.ZFormula.text(),D) ],
+                        umin=sympify(self.umin.text()),
+                        umax=sympify(self.umax.text()),
+                        vmin=sympify(self.vmin.text()),        
+                        vmax=sympify(self.vmax.text()))
+        
+        
         self.mayavi_widget.visualization.update_plot()
         
     
