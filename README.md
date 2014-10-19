@@ -1,13 +1,13 @@
 colour-surfaces
 ===============
 
-Simple Python Scripts to colour surfaces by gaussian  curvature.
+Simple Python Program  to colour surfaces by gaussian  curvature.
 
-Using nympy and Mayavi
+Using nympy,sympy  and Mayavi
 
-![Alt text](/torus.png?raw=true "Torus")
-![Alt text](/helix.png?raw=true "Helix")
-![Alt text](/hyperboloid.png?raw=true "Hyperboloid")
+![Alt text](/image1.png?raw=true )
+![Alt text](/image2.png?raw=true )
+![Alt text](/image3.png?raw=true )
 
 
 I'm currently building an interactive interface in PySide-Qt.
